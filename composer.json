@@ -1,6 +1,6 @@
 {
-    "name": "konekt/merit-aktiva-for-woocommerce",
-    "description": "Integration with Merit Aktiva and WooCommerce for automatic data exchange.",
+    "name": "konekt/standard-books-for-woocommerce",
+    "description": "Integration with Standard Books and WooCommerce for automatic data exchange.",
     "type": "wordpress-plugin",
     "authors": [
         {

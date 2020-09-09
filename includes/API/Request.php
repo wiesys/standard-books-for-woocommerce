@@ -2,11 +2,11 @@
 /**
  * API Request
  *
- * @package Merit Aktiva for WooCommerce
+ * @package Standard Books for WooCommerce
  * @author Konekt
  */
 
-namespace Konekt\WooCommerce\Merit_Aktiva\API;
+namespace Konekt\WooCommerce\Standard_Books\API;
 
 use SkyVerge\WooCommerce\PluginFramework\v5_6_1 as Framework;
 
@@ -18,55 +18,23 @@ defined( 'ABSPATH' ) or exit;
  *
  * @since 1.0.0
  */
-class Request extends Framework\SV_WC_API_JSON_Request {
+class Request extends Framework\SV_WC_API_XML_Request {
 
 
-	/**
-	 * Construct API request
-	 *
-	 * @param string $api_id
-	 * @param string $api_key
-	 * @param string $method
-	 * @param string $path
-	 * @param array $data
-	 * @param array $params
-	 */
-	public function __construct( $api_id, $api_key, $method, $path, $data = [], $params = [] ) {
+	public function __construct( $path, $method, $params = [], $data = [] ) {
 
-		$this->api_id  = $api_id;
-		$this->api_key = $api_key;
-		$this->method  = $method;
-		$this->path    = $path;
-		$this->data    = $data;
-		$this->params  = $params;
+		$this->method       = $method;
+		$this->path         = $path;
+		$this->params       = $params;
+		$this->request_data = [
+			$this->get_root_element() => $data,
+		];
 	}
 
 
-	/**
-	 * Get the request parameters.
-	 *
-	 * @since 1.0.0
-	 * @see SV_WC_API_Request::get_params()
-	 * @return array
-	 */
-	public function get_params() {
-		$params = $this->params;
+	protected function get_root_element() {
 
-		$params['ApiId']     = $this->api_id;
-		$params['timestamp'] = date( 'YmdHis' );
-		$params['signature'] = $this->create_signature( $this->get_data() );
-
-		return $params;
-	}
-
-
-	protected function create_signature( $data ) {
-
-		$signable      = $this->api_id . date( 'YmdHis' ) . wp_json_encode( $data );
-		$raw_signature = hash_hmac( 'sha256', $signable, $this->api_key, true );
-		$signature     = base64_encode( $raw_signature );
-
-		return $signature;
+		return 'data';
 	}
 
 

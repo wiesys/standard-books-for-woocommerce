@@ -2,11 +2,11 @@
 /**
  * Plugin base class
  *
- * @package Merit Aktiva for WooCommerce
+ * @package Standard Books for WooCommerce
  * @author Konekt
  */
 
-namespace Konekt\WooCommerce\Merit_Aktiva;
+namespace Konekt\WooCommerce\Standard_Books;
 
 defined( 'ABSPATH' ) or exit;
 
@@ -25,13 +25,19 @@ class Plugin extends Framework\SV_WC_Plugin {
 	const VERSION = '1.0.0';
 
 	/** plugin id */
-	const PLUGIN_ID = 'wc-merit-aktiva';
+	const PLUGIN_ID = 'wc-standard-books';
 
 	/** @var string the integration class name */
-	const INTEGRATION_CLASS = '\\Konekt\\WooCommerce\\Merit_Aktiva\\Integration';
+	const INTEGRATION_CLASS = '\\Konekt\\WooCommerce\\Standard_Books\\Integration';
 
-	/** @var \Konekt\WooCommerce\Merit_Aktiva\Integration the integration class instance */
+	/** @var string the data store class name */
+	const DATASTORE_CLASS = '\\Konekt\\WooCommerce\\Standard_Books\\Product_Data_Store';
+
+	/** @var \Konekt\WooCommerce\Standard_Books\Integration the integration class instance */
 	private $integration;
+
+
+	private $cache_prefix;
 
 
 	/**
@@ -41,11 +47,13 @@ class Plugin extends Framework\SV_WC_Plugin {
 	 */
 	public function __construct() {
 
+		$this->cache_prefix = 'wc_' . self::PLUGIN_ID . '_cache_';
+
 		parent::__construct(
 			self::PLUGIN_ID,
 			self::VERSION,
 			array(
-				'text_domain' => 'konekt-merit-aktiva',
+				'text_domain' => 'konekt-standard-books',
 			)
 		);
 	}
@@ -61,6 +69,9 @@ class Plugin extends Framework\SV_WC_Plugin {
 		$this->load_integration();
 
 		add_filter( 'woocommerce_integrations', array( $this, 'load_integration' ) );
+
+		// Add custom data store
+		add_filter( 'woocommerce_data_stores', array( $this, 'load_product_data_store' ) );
 	}
 
 
@@ -85,12 +96,24 @@ class Plugin extends Framework\SV_WC_Plugin {
 	}
 
 
+	public function load_product_data_store( $stores = [] ) {
+
+		if ( ! class_exists( self::DATASTORE_CLASS ) ) {
+			require_once( $this->get_plugin_path() . '/Product_Data_Store.php' );
+		}
+
+		$stores['product'] = self::DATASTORE_CLASS;
+
+		return $stores;
+	}
+
+
 	/**
 	 * Returns the integration class instance.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return \Konekt\WooCommerce\Merit_Aktiva\Integration the integration class instance
+	 * @return \Konekt\WooCommerce\Standard_Books\Integration the integration class instance
 	 */
 	public function get_integration() {
 
@@ -151,6 +174,11 @@ class Plugin extends Framework\SV_WC_Plugin {
 	}
 
 
+	public function get_order_meta( \WC_Order $order, $key ) {
+		return $order->get_meta( $this->get_order_meta_key( $key ), true );
+	}
+
+
 	/**
 	 * Add note to order
 	 *
@@ -165,6 +193,16 @@ class Plugin extends Framework\SV_WC_Plugin {
 	}
 
 
+	public function get_cache( $cache_key ) {
+		return get_transient( $this->cache_prefix . $cache_key );
+	}
+
+
+	public function set_cache( $cache_key, $data, $expiration ) {
+		return set_transient( $this->cache_prefix . $cache_key, $data, $expiration );
+	}
+
+
 	/**
 	 * Gets the URL to the settings page.
 	 *
@@ -176,7 +214,7 @@ class Plugin extends Framework\SV_WC_Plugin {
 	 */
 	public function get_settings_url( $_ = '' ) {
 
-		return admin_url( 'admin.php?page=wc-settings&tab=integration&section=merit_aktiva' );
+		return admin_url( 'admin.php?page=wc-settings&tab=integration&section=standard_books' );
 	}
 
 
@@ -187,7 +225,7 @@ class Plugin extends Framework\SV_WC_Plugin {
 	 */
 	public function get_documentation_url() {
 
-		return 'https://konekt.ee/woocommerce/merit-aktiva';
+		return 'https://konekt.ee/woocommerce/standard-books';
 	}
 
 
@@ -200,7 +238,7 @@ class Plugin extends Framework\SV_WC_Plugin {
 	 */
 	public function get_plugin_name() {
 
-		return __( 'Merit Aktiva for WooCommerce', 'konekt-merit-aktiva' );
+		return __( 'Standard Books for WooCommerce', 'konekt-standard-books' );
 	}
 
 

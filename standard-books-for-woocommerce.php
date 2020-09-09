@@ -1,15 +1,15 @@
 <?php
 /**
- * Plugin Name: Merit Aktiva for WooCommerce
- * Plugin URI: https://konekt.ee/merit-aktiva-for-woocommerce
- * Description: Supercharge your WooCommerce with Merit Aktiva integration for seamless orders data exchange.
+ * Plugin Name: Standard Books for WooCommerce
+ * Plugin URI: https://konekt.ee/standard-books-for-woocommerce
+ * Description: Supercharge your WooCommerce with Standard Books integration for seamless orders data exchange.
  * Author: Konekt
  * Author URI: https://konekt.ee
  * Version: 1.0.0
- * Text Domain: konekt-merit-aktiva
+ * Text Domain: konekt-standard-books
  * Domain Path: /i18n/languages/
  *
- * @package Merit Aktiva for WooCommerce
+ * @package Standard Books for WooCommerce
  * @author  Konekt
  */
 
@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) or exit;
  *
  * @since 1.0.0
  */
-class Konekt_WC_Merit_Aktiva {
+class Konekt_WC_Standard_Books {
 
 
 	/** minimum PHP version required by this plugin */
@@ -36,10 +36,10 @@ class Konekt_WC_Merit_Aktiva {
 	const FRAMEWORK_VERSION = '5.6.1';
 
 	/** the plugin name, for displaying notices */
-	const PLUGIN_NAME = 'Merit Aktiva for WooCommerce';
+	const PLUGIN_NAME = 'Standard Books for WooCommerce';
 
 
-	/** @var Konekt_WC_Merit_Aktiva single instance of this class */
+	/** @var Konekt_WC_Standard_Books single instance of this class */
 	private static $instance;
 
 	/** @var array the admin notices to add */
@@ -106,13 +106,13 @@ class Konekt_WC_Merit_Aktiva {
 		$loader = require_once( plugin_dir_path( __FILE__ ) . 'vendor/autoload.php' );
 
 		// register plugin namespace with autoloader
-		$loader->addPsr4( 'Konekt\\WooCommerce\\Merit_Aktiva\\', __DIR__ . '/includes' );
+		$loader->addPsr4( 'Konekt\\WooCommerce\\Standard_Books\\', __DIR__ . '/includes' );
 
 		// depending on how the plugin is structured, you may need to manually load the file that contains the initial plugin function
 		require_once( plugin_dir_path( __FILE__ ) . 'includes/Functions.php' );
 
 		// fire it up!
-		wc_konekt_woocommerce_merit_aktiva();
+		wc_konekt_woocommerce_standard_books();
 	}
 
 
@@ -308,7 +308,7 @@ class Konekt_WC_Merit_Aktiva {
 
 
 	/**
-	 * Displays any admin notices added with \Konekt_WC_Merit_Aktiva::add_admin_notice()
+	 * Displays any admin notices added with \Konekt_WC_Standard_Books::add_admin_notice()
 	 *
 	 * @internal
 	 *
@@ -356,13 +356,13 @@ class Konekt_WC_Merit_Aktiva {
 
 
 	/**
-	 * Gets the main \Konekt_WC_Merit_Aktiva instance.
+	 * Gets the main \Konekt_WC_Standard_Books instance.
 	 *
 	 * Ensures only one instance can be loaded.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return \Konekt_WC_Merit_Aktiva
+	 * @return \Konekt_WC_Standard_Books
 	 */
 	public static function instance() {
 
@@ -377,4 +377,4 @@ class Konekt_WC_Merit_Aktiva {
 }
 
 // fire it up!
-Konekt_WC_Merit_Aktiva::instance();
+Konekt_WC_Standard_Books::instance();

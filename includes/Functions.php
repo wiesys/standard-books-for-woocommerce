@@ -2,19 +2,19 @@
 /**
  * Helper functions
  *
- * @package Merit Aktiva for WooCommerce
+ * @package Standard Books for WooCommerce
  * @author Konekt
  */
 
-use Konekt\WooCommerce\Merit_Aktiva\Plugin;
+use Konekt\WooCommerce\Standard_Books\Plugin;
 
 
 /**
  * @since 1.0.0
  *
- * @return \Konekt\WooCommerce\Merit_Aktiva\Plugin
+ * @return \Konekt\WooCommerce\Standard_Books\Plugin
  */
-function wc_konekt_woocommerce_merit_aktiva() {
+function wc_konekt_woocommerce_standard_books() {
 
 	return Plugin::instance();
 }
