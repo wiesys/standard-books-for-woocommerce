@@ -31,6 +31,10 @@ class Response extends Framework\SV_WC_API_XML_Response {
 	 * @param string $raw_response_xml The raw response XML
 	 */
 	public function __construct( $raw_response_xml ) {
+		if ( ! $raw_response_xml ) {
+			throw new Framework\SV_WC_API_Exception( 'Response empty', 0 );
+		}
+
 		// LIBXML_NOCDATA ensures that any XML fields wrapped in [CDATA] will be included as text nodes
 		$parsed_xml = @simplexml_load_string( $raw_response_xml, 'SimpleXMLElement', LIBXML_NOCDATA );
 

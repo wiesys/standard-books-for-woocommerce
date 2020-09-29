@@ -10,21 +10,17 @@ namespace Konekt\WooCommerce\Standard_Books;
 
 defined( 'ABSPATH' ) or exit;
 
-class Product_Data_Store extends \WC_Product_Data_Store_CPT implements \WC_Object_Data_Store_Interface, \WC_Product_Data_Store_Interface {
+class Product_Data_Store {
 
 
-	public function read( &$product ) {
-		parent::read( $product );
+	public function read( $product ) {
 
-		if ( ! empty( $product->get_sku() ) ) {
+		if ( 'yes' === $this->get_integration()->get_option( 'stock_sync_allowed', 'no' ) ) {
+			$this->refetch_product_stock( $product );
+		}
 
-			if ( 'yes' === $this->get_integration()->get_option( 'stock_sync_allowed', 'no' ) ) {
-				$this->refetch_product_stock( $product );
-			}
-
-			if ( 'yes' === $this->get_integration()->get_option( 'product_sync_allowed', 'no' ) ) {
-				$this->refetch_product_data( $product );
-			}
+		if ( 'yes' === $this->get_integration()->get_option( 'product_sync_allowed', 'no' ) ) {
+			$this->refetch_product_data( $product );
 		}
 	}
 
@@ -38,33 +34,29 @@ class Product_Data_Store extends \WC_Product_Data_Store_CPT implements \WC_Objec
 	 */
 	private function refetch_product_stock( &$product ) {
 		$stock_cache_key = $this->get_stock_cache_key( $product->get_sku() );
+		$article_stock   = $this->get_plugin()->get_cache( $stock_cache_key );
 
-		if ( false === ( $cached = $this->get_plugin()->get_cache( $stock_cache_key ) ) ) {
+		if ( false === $article_stock ) {
 			$article_stock = $this->get_api()->get_article_stock( $product->get_sku() );
 
-			if ( $article_stock ) {
-				$new_stock_count = wc_stock_amount( $article_stock->Instock );
-
-				if ( $new_stock_count != $product->get_stock_quantity() ) {
-					$this->update_product_stock( $product->get_id(), $new_stock_count, 'set' );
-				}
-
-				if ( ! $product->managing_stock() ) {
-					$product->set_manage_stock( true );
-					$product->set_stock_status( $new_stock_count > 0 ? 'instock' : 'outofstock' );
-				}
-
-				if ( $new_stock_count > 0 && 'instock' !== $product->get_stock_status() ) {
-					$product->set_stock_status( 'instock' );
-				}
-
-				if ( ! empty( $product->get_changes() ) ) {
-					$product->save();
-				}
-
-			}
-
 			$this->get_plugin()->set_cache( $stock_cache_key, $article_stock, MINUTE_IN_SECONDS * intval( $this->get_integration()->get_option( 'stock_refresh_rate', 15 ) ) );
+		}
+
+		if ( empty( $article_stock ) ) {
+			return;
+		}
+
+		$new_stock_count = wc_stock_amount( $article_stock->Instock );
+
+		$product->set_manage_stock( true );
+		$product->set_stock_quantity( $new_stock_count );
+
+		if ( $new_stock_count > 0 ) {
+			$product->set_stock_status( 'instock' );
+		}
+
+		if ( ! empty( $product->get_changes() ) ) {
+			$product->save();
 		}
 	}
 
