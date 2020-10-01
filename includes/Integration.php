@@ -152,6 +152,14 @@ class Integration extends \WC_Integration {
 				'label'   => __( 'Invoices sent from the shop are automatically confirmed.', 'konekt-standard-books' ),
 			],
 
+			'bacs_invoice_unconfirmed' => [
+				'title'   => __( 'BACS orders unconfirmed', 'konekt-standard-books' ),
+				'type'    => 'checkbox',
+				'default' => 'no',
+				'value'   => 'yes',
+				'label'   => __( 'Orders that are created with BACS payment method will not be confirmed.', 'konekt-standard-books' ),
+			],
+
 			// Stock
 			'stock_section_title' => [
 				'title' => __( 'Stock management configuration', 'konekt-standard-books' ),
@@ -470,8 +478,6 @@ class Integration extends \WC_Integration {
 		if ( ! is_object( $order ) ) {
 			$order = wc_get_order( $order );
 		}
-
-		wc_konekt_woocommerce_standard_books()->log( 'submit action' );
 
 		// Submit manually
 		$this->maybe_create_invoice( $order->get_id(), $this->get_option( 'invoice_sync_status', 'processing' ), $this->get_option( 'invoice_sync_status', 'processing' ), $order );

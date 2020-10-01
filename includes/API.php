@@ -152,7 +152,6 @@ class API extends Framework\SV_WC_API_Base {
 			'RefStr'       => $this->integration->get_option( 'order_number_prefix', '' ) . $order->get_order_number(),
 			'InvDate'      => $order->get_date_created()->format( 'Y-m-d' ),
 			'CustCode'     => $customer_code,
-			'PayDate'      => $order->get_date_paid()->format( 'Y-m-d' ),
 			'Addr0'        => $order->get_formatted_billing_full_name(),
 			'Addr1'        => $order->get_billing_address_1(),
 			'Addr2'        => $order->get_billing_address_2(),
@@ -180,11 +179,17 @@ class API extends Framework\SV_WC_API_Base {
 			$invoice['CalcFinRef'] = $reference_number;
 		}
 
+		if ( $order->is_paid() ) {
+			$invoice['PayDate'] = $order->get_date_paid()->format( 'Y-m-d' );
+		}
+
 		if ( ! empty( $warehouse = $this->integration->get_option( 'primary_warehouse' ) ) ) {
 			$invoice['Location'] = $warehouse;
 		}
 
-		if ( 'yes' === $this->integration->get_option( 'invoice_confirmed', 'no' ) ) {
+		if ( 'bacs' === $order->get_payment_method() && 'yes' === $this->integration->get_option( 'bacs_invoice_unconfirmed', 'no' ) ) {
+			$invoice['OKFlag'] = 0;
+		} elseif ( 'yes' === $this->integration->get_option( 'invoice_confirmed', 'no' ) ) {
 			$invoice['OKFlag'] = 1;
 		} else {
 			$invoice['OKFlag'] = 0;
