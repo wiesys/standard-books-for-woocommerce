@@ -200,6 +200,16 @@ class Plugin extends Framework\SV_WC_Plugin {
 	}
 
 
+	public function get_stock_cache_key( $product_sku ) {
+		return 'article_stock_' . $product_sku;
+	}
+
+
+	public function get_article_cache_key( $product_sku ) {
+		return 'article_' . $product_sku;
+	}
+
+
 	public function get_cache( $cache_key ) {
 		return get_transient( $this->cache_prefix . $cache_key );
 	}
@@ -207,6 +217,11 @@ class Plugin extends Framework\SV_WC_Plugin {
 
 	public function set_cache( $cache_key, $data, $expiration ) {
 		return set_transient( $this->cache_prefix . $cache_key, $data, $expiration );
+	}
+
+
+	public function delete_cache( $cache_key ) {
+		return delete_transient( $this->cache_prefix . $cache_key );
 	}
 
 

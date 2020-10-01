@@ -37,6 +37,10 @@ class Integration extends \WC_Integration {
 				add_action( 'woocommerce_order_status_changed', array( $this, 'maybe_create_invoice' ), 20, 4 );
 			}
 
+			// Manual update handling
+			add_action( 'woocommerce_product_options_inventory_product_data', array( $this, 'add_product_update_data_field' ) );
+			add_action( 'init', array( $this, 'init' ) );
+
 			// Add "Submit again to Standard Books".
 			add_filter( 'woocommerce_order_actions', array( $this, 'add_order_view_action' ), 90, 1 );
 			add_action( 'woocommerce_order_action_wc_' . wc_konekt_woocommerce_standard_books()->get_id() . '_submit_order_action', array( $this, 'process_order_submit_action' ), 90, 1 );
@@ -481,6 +485,43 @@ class Integration extends \WC_Integration {
 
 		// Submit manually
 		$this->maybe_create_invoice( $order->get_id(), $this->get_option( 'invoice_sync_status', 'processing' ), $this->get_option( 'invoice_sync_status', 'processing' ), $order );
+	}
+
+
+	/**
+	 * Add custom button for manual product data update
+	 *
+	 * @return void
+	 */
+	public function add_product_update_data_field() {
+		?>
+		<div class="options_group options-group__<?php echo esc_attr( $this->id ) ?>">
+			<a href="<?php echo esc_url( add_query_arg( 'update_source', $this->id ) ); ?>" class="button"><?php esc_html_e( 'Update data', 'konekt-standard-books' ); ?></a>
+		</div>
+		<?php
+	}
+
+
+	/**
+	 * WordPress initialized.
+	 *
+	 * @return void
+	 */
+	public function init() {
+		if ( isset( $_GET['update_source'] ) && $this->id === $_GET['update_source'] ) {
+			$product_id = sanitize_text_field( wp_unslash( $_GET['post'] ) );
+			$product    = wc_get_product( $product_id );
+
+			if ( $product && $product->get_sku() ) {
+				$this->get_plugin()->delete_cache( $this->get_plugin()->get_stock_cache_key( $product->get_sku() ) );
+				$this->get_plugin()->delete_cache( $this->get_plugin()->get_article_cache_key( $product->get_sku() ) );
+			}
+		}
+	}
+
+
+	public function get_plugin() {
+		return wc_konekt_woocommerce_standard_books();
 	}
 
 
