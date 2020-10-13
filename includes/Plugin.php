@@ -85,7 +85,7 @@ class Plugin extends Framework\SV_WC_Plugin {
 	public function load_integration( $integrations = [] ) {
 
 		if ( ! class_exists( self::INTEGRATION_CLASS ) ) {
-			require_once( $this->get_plugin_path() . '/Integration.php' );
+			require_once( $this->get_plugin_path() . '/includes/Integration.php' );
 		}
 
 		if ( ! in_array( self::INTEGRATION_CLASS, $integrations, true ) ) {

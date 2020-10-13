@@ -41,9 +41,13 @@ class Integration extends \WC_Integration {
 			add_action( 'woocommerce_product_options_inventory_product_data', array( $this, 'add_product_update_data_field' ) );
 			add_action( 'init', array( $this, 'init' ) );
 
+			// Admin notices and bulk generating
+			add_action( 'load-edit.php', array( $this, 'prepare_orders_for_submittance' ) );
+			add_action( 'admin_footer', array( $this, 'add_bulk_actions' ), 10 );
+
 			// Add "Submit again to Standard Books".
 			add_filter( 'woocommerce_order_actions', array( $this, 'add_order_view_action' ), 90, 1 );
-			add_action( 'woocommerce_order_action_wc_' . wc_konekt_woocommerce_standard_books()->get_id() . '_submit_order_action', array( $this, 'process_order_submit_action' ), 90, 1 );
+			add_action( 'woocommerce_order_action_wc_' . $this->get_plugin()->get_id() . '_submit_order_action', array( $this, 'process_order_submit_action' ), 90, 1 );
 		}
 	}
 
@@ -249,14 +253,14 @@ class Integration extends \WC_Integration {
 	 * @return void
 	 */
 	public function get_taxes() {
-		if ( false === ( $taxes = get_transient( 'wc_' . wc_konekt_woocommerce_standard_books()->get_id() . '_taxes' ) ) ) {
+		if ( false === ( $taxes = get_transient( 'wc_' . $this->get_plugin()->get_id() . '_taxes' ) ) ) {
 			$taxes = $this->get_api()->get_taxes();
 
 			if ( ! empty( $taxes ) ) {
 				$taxes = array_column( (array) $taxes, 'Comment', 'VATCode' );
 			}
 
-			set_transient( 'wc_' . wc_konekt_woocommerce_standard_books()->get_id() . '_taxes', $taxes, HOUR_IN_SECONDS );
+			set_transient( 'wc_' . $this->get_plugin()->get_id() . '_taxes', $taxes, HOUR_IN_SECONDS );
 		}
 
 		return $taxes ?? [];
@@ -295,6 +299,77 @@ class Integration extends \WC_Integration {
 		}
 
 		$this->get_api()->create_invoice( $order, $customer_code );
+	}
+
+
+	/**
+	 * Fetches all order and creates invoices
+	 *
+	 * @return void
+	 */
+	function prepare_orders_for_submittance() {
+		// Only on orders page
+		if ( ! isset( $_REQUEST['post_type'] ) || $_REQUEST['post_type'] != 'shop_order' ) {
+			return false;
+		}
+
+		// Holder for post ids.
+		$post_ids = array();
+
+		// Integer validation.
+		if ( isset( $_REQUEST['post'] ) ) {
+			$post_ids = array_map( 'intval', $_REQUEST['post'] );
+		}
+
+		// Do nothing without selected posts
+		if ( empty( $post_ids ) ) {
+			return false;
+		}
+
+		$action_name = $this->id . '_maybe_generate_invoices';
+
+		if( ( isset( $_REQUEST['action2'] ) && $_REQUEST['action2'] == $action_name ) || ( isset( $_REQUEST['action'] ) && $_REQUEST['action'] == $action_name ) ) {
+			// Create invoices
+			foreach( $post_ids as $post_id ) {
+				$order      = wc_get_order( $post_id );
+				$invoice_id = $this->get_plugin()->get_order_meta( $order, 'invoice_id' );
+
+				if ( $invoice_id ) {
+					continue;
+				}
+
+				$this->maybe_create_invoice( $post_id, '', $order->get_status(), $order );
+			}
+		}
+	}
+
+
+	/**
+	 * Add bulk actions to Orders list screen via JavaScript, as there is no hook available to be used
+	 */
+	function add_bulk_actions() {
+		global $post_type;
+
+		if ( $post_type == 'shop_order' ) {
+
+			$action_name = $this->id . '_maybe_generate_invoices';
+
+			wc_enqueue_js("
+				$( 'select[name=action], select[name=action2]' ).addClass( 'order-bulk-actions' );
+
+				$( '<option />' ).val( '" . $action_name . "' ).text( '". __( 'Submit to Standard Books', 'konekt-standard-books' ) . "' ).appendTo( '.order-bulk-actions' );
+
+				$( '#posts-filter' )
+					.on( 'change', '.order-bulk-actions', function(event) {
+						if( $( this ).val() == '" . $action_name . "' ) {
+							$( '#posts-filter' ).attr( 'target', '_blank' );
+						}
+						else {
+							$( '#posts-filter' ).removeAttr( 'target' );
+						}
+					});
+			");
+		}
 	}
 
 
@@ -472,7 +547,7 @@ class Integration extends \WC_Integration {
 
 	public function add_order_view_action( $actions ) {
 		// Add custom action
-		$actions['wc_' . wc_konekt_woocommerce_standard_books()->get_id() . '_submit_order_action'] = __( 'Submit order to Standard Books', 'konekt-standard-books' );
+		$actions['wc_' . $this->get_plugin()->get_id() . '_submit_order_action'] = __( 'Submit order to Standard Books', 'konekt-standard-books' );
 
 		return $actions;
 	}

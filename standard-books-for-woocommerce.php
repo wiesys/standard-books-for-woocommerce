@@ -24,13 +24,13 @@ class Konekt_WC_Standard_Books {
 
 
 	/** minimum PHP version required by this plugin */
-	const MINIMUM_PHP_VERSION = '5.6.0';
+	const MINIMUM_PHP_VERSION = '7.0.0';
 
 	/** minimum WordPress version required by this plugin */
 	const MINIMUM_WP_VERSION = '4.4';
 
 	/** minimum WooCommerce version required by this plugin */
-	const MINIMUM_WC_VERSION = '3.0.9';
+	const MINIMUM_WC_VERSION = '4.0';
 
 	/** SkyVerge plugin framework version used by this plugin */
 	const FRAMEWORK_VERSION = '5.6.1';

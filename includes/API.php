@@ -197,6 +197,8 @@ class API extends Framework\SV_WC_API_Base {
 
 		$order_current_invoice_id = $this->get_plugin()->get_order_meta( $order, 'invoice_id' );
 
+		$this->get_plugin()->log( print_r( $invoice, true ) );
+
 		try {
 			$request  = $this->get_new_request( [
 				'method' => $order_current_invoice_id ? 'PATCH' : 'POST',
