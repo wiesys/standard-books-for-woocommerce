@@ -48,6 +48,14 @@ class Integration extends \WC_Integration {
 			// Add "Submit again to Standard Books".
 			add_filter( 'woocommerce_order_actions', array( $this, 'add_order_view_action' ), 90, 1 );
 			add_action( 'woocommerce_order_action_wc_' . $this->get_plugin()->get_id() . '_submit_order_action', array( $this, 'process_order_submit_action' ), 90, 1 );
+
+			// Add order status column
+			add_filter( 'manage_edit-shop_order_columns', array( $this, 'add_order_listing_columns' ) );
+			add_filter( 'manage_shop_order_posts_custom_column', array( $this, 'show_order_listing_column' ), 10, 1 );
+
+			// Allow filtering orders with/without order ID
+			add_action( 'restrict_manage_posts', array( $this, 'filter_orders_by_external_order_id') , 20 );
+			add_filter( 'request', array( $this, 'filter_orders_by_external_order_id_query' ) );
 		}
 	}
 
@@ -388,6 +396,45 @@ class Integration extends \WC_Integration {
 	}
 
 
+	public function filter_orders_by_external_order_id() {
+		global $typenow;
+
+		if ( 'shop_order' === $typenow ) {
+			$action_name = $this->id . '_order_id_filter';
+			?>
+			<select name="<?php echo esc_attr( $action_name ); ?>" id="dropdown_<?php echo esc_attr( $action_name ); ?>">
+				<option value=""><?php esc_html_e( 'Show all orders', 'konekt-standard-books' ); ?></option>
+
+				<option value="1" <?php echo esc_attr( isset( $_GET[$action_name] ) ? selected( '1', $_GET[$action_name], false ) : '' ); ?>><?php esc_html_e( 'Standard Books: Submitted', 'konekt-standard-books' ) ?></option>
+				<option value="0" <?php echo esc_attr( isset( $_GET[$action_name] ) ? selected( '0', $_GET[$action_name], false ) : '' ); ?>><?php esc_html_e( 'Standard Books: Not submitted', 'konekt-standard-books' ) ?></option>
+			</select>
+			<?php
+		}
+	}
+
+
+	public function filter_orders_by_external_order_id_query( $vars ) {
+
+		global $typenow;
+
+		$action_name = $this->id . '_order_id_filter';
+
+		if ( 'shop_order' == $typenow && isset( $_GET[$action_name] ) && is_numeric( $_GET[$action_name] ) ) {
+
+			$vars['meta_key'] = $this->get_plugin()->get_order_meta_key( 'invoice_id' );
+
+			if ( 1 === (int) $_GET[$action_name] ) {
+				$vars['meta_compare'] = '!=';
+				$vars['meta_value']   = '';
+			} elseif ( 0 === (int) $_GET[$action_name] ) {
+				$vars['meta_compare'] = 'NOT EXISTS';
+			}
+		}
+
+		return $vars;
+	}
+
+
 	/**
 	 * Gets the API handler instance.
 	 *
@@ -575,6 +622,34 @@ class Integration extends \WC_Integration {
 
 		// Submit manually
 		$this->maybe_create_invoice( $order->get_id(), $this->get_option( 'invoice_sync_status', 'processing' ), $this->get_option( 'invoice_sync_status', 'processing' ), $order );
+	}
+
+
+	public function add_order_listing_columns( $columns ) {
+		$new_columns = [];
+
+		foreach ( $columns as $column_name => $column_info ) {
+
+			if ( 'order_total' === $column_name ) {
+				$new_columns[ $this->id ] = __( 'Standard Books', 'konekt-standard-books' );
+			}
+
+			$new_columns [ $column_name ] = $column_info;
+
+		}
+
+		return $new_columns;
+	}
+
+
+	public function show_order_listing_column( $column ) {
+		global $post;
+
+		if ( $this->id == $column ) {
+			$order = wc_get_order( $post->ID );
+
+			echo $this->get_plugin()->get_order_meta( $order, 'invoice_id' );
+		}
 	}
 
 

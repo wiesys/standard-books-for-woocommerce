@@ -133,9 +133,12 @@ class API extends Framework\SV_WC_API_Base {
 			} elseif ( $order_item->is_type( 'shipping' ) ) {
 
 				$order_row['ItemType'] = '3';
-				$order_row             = [
-					'ArtCode' => $this->integration->get_option( 'invoice_shipping_sku' ),
-				] + $order_row;
+
+				if ( $shipping_sku = $this->integration->get_option( 'invoice_shipping_sku' ) ) {
+					$order_row = [
+						'ArtCode' => $shipping_sku,
+					] + $order_row;
+				}
 			}
 
 			if ( $order_item->get_tax_class() ) {
@@ -151,12 +154,9 @@ class API extends Framework\SV_WC_API_Base {
 		$invoice = [
 			'RefStr'       => $this->integration->get_option( 'order_number_prefix', '' ) . $order->get_order_number(),
 			'InvDate'      => $order->get_date_created()->format( 'Y-m-d' ),
-			'CustCode'     => $customer_code,
-			'Addr0'        => $order->get_formatted_billing_full_name(),
 			'Addr1'        => $order->get_billing_address_1(),
 			'Addr2'        => $order->get_billing_address_2(),
 			'Addr2'        => $order->get_billing_country(),
-			'PayDeal'      => $this->integration->get_option( 'invoice_payment_deal', 7 ),
 			'InvComment'   => $order->get_customer_note( 'edit' ),
 			'InvType'      => 1,
 			'InclVAT'      => 0,
@@ -170,6 +170,9 @@ class API extends Framework\SV_WC_API_Base {
 			'ShipAddr2'    => $order->get_shipping_country(),
 			'Phone'        => $order->get_billing_phone(),
 			'rows'         => $order_items,
+			'CustCode'     => $customer_code,
+			'PayDeal'      => $this->integration->get_option( 'invoice_payment_deal', 7 ),
+			'Addr0'        => $order->get_formatted_billing_full_name(),
 		];
 
 		// Support for "Estonian Banklinks for WooCommerce"
@@ -206,11 +209,12 @@ class API extends Framework\SV_WC_API_Base {
 		$this->get_plugin()->log( print_r( $invoice, true ) );
 
 		try {
-			$request  = $this->get_new_request( [
+			$request = $this->get_new_request( [
 				'method' => $order_current_invoice_id ? 'PATCH' : 'POST',
 				'path'   => $order_current_invoice_id ? 'IVVc/' . $order_current_invoice_id : 'IVVc',
 				'params' => $this->add_set_field_prefix( apply_filters( 'wc_' . $this->get_plugin()->get_id() . '_invoice_data', $invoice ) ),
 			] );
+
 			$response = $this->perform_request( $request );
 
 			if ( 200 === $this->get_response_code() ) {
@@ -271,6 +275,8 @@ class API extends Framework\SV_WC_API_Base {
 				$order,
 				__( 'Invoice generation failed.', 'konekt-standard-books' ),
 			);
+
+			$this->get_plugin()->log( print_r( $request->get_params(), true ) );
 		}
 
 		return 200 === $this->get_response_code();
@@ -335,18 +341,6 @@ class API extends Framework\SV_WC_API_Base {
 		}
 
 		return $request->VATCodeBlock->rows->row;
-	}
-
-
-	/**
-	 * Format number
-	 *
-	 * @param float $number
-	 *
-	 * @return string
-	 */
-	private function format_number( $number ) {
-		return Framework\SV_WC_Helper::number_format( $number );
 	}
 
 
