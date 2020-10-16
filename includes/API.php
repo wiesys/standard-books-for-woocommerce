@@ -103,7 +103,7 @@ class API extends Framework\SV_WC_API_Base {
 	 *
 	 * @return bool
 	 */
-	public function create_invoice( $order, $customer_code ) {
+	public function create_invoice( $order, $customer_code, $update_stock = true ) {
 
 		$order_items = [];
 		$row_number  = 0;
@@ -177,6 +177,12 @@ class API extends Framework\SV_WC_API_Base {
 
 		if ( $reference_number ) {
 			$invoice['CalcFinRef'] = $reference_number;
+		}
+
+		if ( $update_stock ) {
+			$invoice['UpdStockFlag'] = 1;
+		} else {
+			$invoice['UpdStockFlag'] = 0;
 		}
 
 		if ( $order->is_paid() ) {
@@ -317,11 +323,16 @@ class API extends Framework\SV_WC_API_Base {
 	 * @return void
 	 */
 	public function get_taxes() {
-		$request = $this->perform_request(
-			$this->get_new_request( [
-				'path' => 'VATCodeBlock',
-			] )
-		);
+		try {
+			$request = $this->perform_request(
+				$this->get_new_request( [
+					'path' => 'VATCodeBlock',
+				] )
+			);
+		}
+		catch ( Framework\SV_WC_Plugin_Exception $e ) {
+			$this->get_plugin()->log( $e );
+		}
 
 		return $request->VATCodeBlock->rows->row;
 	}

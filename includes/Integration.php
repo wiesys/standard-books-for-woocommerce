@@ -277,7 +277,7 @@ class Integration extends \WC_Integration {
 	 *
 	 * @return void
 	 */
-	public function maybe_create_invoice( $order_id, $order_old_status, $order_new_status, $order ) {
+	public function maybe_create_invoice( $order_id, $order_old_status, $order_new_status, $order, $update_stock = true ) {
 
 		if ( $order_new_status !== $this->get_option( 'invoice_sync_status', 'processing' ) ) {
 			return;
@@ -298,7 +298,7 @@ class Integration extends \WC_Integration {
 			}
 		}
 
-		$this->get_api()->create_invoice( $order, $customer_code );
+		$this->get_api()->create_invoice( $order, $customer_code, $update_stock );
 	}
 
 
@@ -326,7 +326,8 @@ class Integration extends \WC_Integration {
 			return false;
 		}
 
-		$action_name = $this->id . '_maybe_generate_invoices';
+		$action_name  = $this->id . '_maybe_generate_invoices';
+		$stock_update = empty( $_REQUEST[ $this->id . '_update_stock' ] ) ? 'yes' : $_REQUEST[ $this->id . '_update_stock' ];
 
 		if( ( isset( $_REQUEST['action2'] ) && $_REQUEST['action2'] == $action_name ) || ( isset( $_REQUEST['action'] ) && $_REQUEST['action'] == $action_name ) ) {
 			// Create invoices
@@ -338,7 +339,7 @@ class Integration extends \WC_Integration {
 					continue;
 				}
 
-				$this->maybe_create_invoice( $post_id, '', $order->get_status(), $order );
+				$this->maybe_create_invoice( $post_id, '', $order->get_status(), $order, 'yes' === $stock_update );
 			}
 		}
 	}
@@ -355,18 +356,32 @@ class Integration extends \WC_Integration {
 			$action_name = $this->id . '_maybe_generate_invoices';
 
 			wc_enqueue_js("
-				$( 'select[name=action], select[name=action2]' ).addClass( 'order-bulk-actions' );
+				$( 'select[name=action], select[name=action2]' ).addClass( 'konekt-standard-books-order-actions' );
 
-				$( '<option />' ).val( '" . $action_name . "' ).text( '". __( 'Submit to Standard Books', 'konekt-standard-books' ) . "' ).appendTo( '.order-bulk-actions' );
+				$( '<option />' ).val( '" . $action_name . "' ).text( '". __( 'Submit to Standard Books', 'konekt-standard-books' ) . "' ).appendTo( '.konekt-standard-books-order-actions' );
+
+				var update_stock = $( '<select name=\"" . $this->id . '_update_stock' . "\"></select>' )
+					.addClass( 'konekt-standard-books-invoice-update-stock' )
+					.append( $( '<option />' ).val( 'yes' ).text( '". __( 'Update stock status', 'konekt-standard-books' ) . "' ) )
+					.append( $( '<option />' ).val( 'no' ).text( '". __( 'Do not update stock status', 'konekt-standard-books' ) . "' ) )
+					.hide();
+
+				$( '.konekt-standard-books-order-actions' ).after( update_stock );
 
 				$( '#posts-filter' )
-					.on( 'change', '.order-bulk-actions', function(event) {
+					.on( 'change', '.konekt-standard-books-order-actions', function(event) {
 						if( $( this ).val() == '" . $action_name . "' ) {
-							$( '#posts-filter' ).attr( 'target', '_blank' );
+							$( '.konekt-standard-books-invoice-update-stock' ).show();
 						}
 						else {
-							$( '#posts-filter' ).removeAttr( 'target' );
+							$( '.konekt-standard-books-invoice-update-stock' ).hide();
 						}
+					})
+
+					.on( 'change', '.konekt-standard-books-invoice-update-stock', function (event) {
+						var select = $( this );
+
+						$( '#posts-filter' ).find( '.konekt-standard-books-invoice-update-stock' ).not( select ).val( select.val() );
 					});
 			");
 		}
