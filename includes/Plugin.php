@@ -22,7 +22,7 @@ class Plugin extends Framework\SV_WC_Plugin {
 	protected static $instance;
 
 	/** plugin version number */
-	const VERSION = '1.0.4';
+	const VERSION = '1.0.4.1';
 
 	/** plugin id */
 	const PLUGIN_ID = 'wc-standard-books';
@@ -36,7 +36,7 @@ class Plugin extends Framework\SV_WC_Plugin {
 	/** @var \Konekt\WooCommerce\Standard_Books\Integration the integration class instance */
 	private $integration;
 
-
+	/** @var string cache transient prefix */
 	private $cache_prefix;
 
 
@@ -66,6 +66,7 @@ class Plugin extends Framework\SV_WC_Plugin {
 	 */
 	public function init_plugin() {
 
+		// Add integration
 		$this->load_integration();
 
 		add_filter( 'woocommerce_integrations', array( $this, 'load_integration' ) );

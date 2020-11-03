@@ -255,7 +255,7 @@ class API extends Framework\SV_WC_API_Base {
 						update_user_meta( $customer_id, '_wc_' . $this->get_plugin()->get_id() . '_customer_id', $response->IVVc->CustCode );
 					}
 				} else {
-					$this->get_plugin()->log( $response );
+					$this->get_plugin()->log( print_r( $response, true ) );
 				}
 
 				if ( 'yes' === $this->integration->get_option( 'save_api_messages_to_notes', 'no' ) ) {

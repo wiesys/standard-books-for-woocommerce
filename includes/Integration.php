@@ -14,14 +14,13 @@ class Integration extends \WC_Integration {
 
 
 	/** @var Konekt\WooCommerce\Standard_Books\API API handler instance */
-	protected $api;
+	protected $api = null;
 
 
 	/**
 	 * Integration constructor
 	 */
 	public function __construct() {
-
 		$this->id                 = 'standard_books';
 		$this->method_title       = __( 'Standard Books', 'konekt-standard-books' );
 		$this->method_description = __( 'Supercharge your WooCommerce with Standard Books integration for seamless orders data exchange.', 'konekt-standard-books' );
@@ -32,6 +31,18 @@ class Integration extends \WC_Integration {
 		// Bind to the save action for the settings.
 		add_action( 'woocommerce_update_options_integration_' . $this->id, [ $this, 'process_admin_options' ] );
 
+		// Add hooks when WP is initialized
+		add_action( 'init', array( $this, 'init' ) );
+	}
+
+
+	/**
+	 * WordPress initialized.
+	 *
+	 * @return void
+	 */
+	public function init() {
+
 		if ( $this->have_api_credentials() ) {
 			if ( 'yes' === $this->get_option( 'invoice_sync_allowed', 'no' ) ) {
 				add_action( 'woocommerce_order_status_changed', array( $this, 'maybe_create_invoice' ), 20, 4 );
@@ -39,7 +50,6 @@ class Integration extends \WC_Integration {
 
 			// Manual update handling
 			add_action( 'woocommerce_product_options_inventory_product_data', array( $this, 'add_product_update_data_field' ) );
-			add_action( 'init', array( $this, 'init' ) );
 
 			// Admin notices and bulk generating
 			add_action( 'load-edit.php', array( $this, 'prepare_orders_for_submittance' ) );
@@ -56,6 +66,16 @@ class Integration extends \WC_Integration {
 			// Allow filtering orders with/without order ID
 			add_action( 'restrict_manage_posts', array( $this, 'filter_orders_by_external_order_id') , 20 );
 			add_filter( 'request', array( $this, 'filter_orders_by_external_order_id_query' ) );
+		}
+
+		if ( isset( $_GET['update_source'] ) && $this->id === $_GET['update_source'] ) {
+			$product_id = sanitize_text_field( wp_unslash( $_GET['post'] ) );
+			$product    = wc_get_product( $product_id );
+
+			if ( $product && $product->get_sku() ) {
+				$this->get_plugin()->delete_cache( $this->get_plugin()->get_stock_cache_key( $product->get_sku() ) );
+				$this->get_plugin()->delete_cache( $this->get_plugin()->get_article_cache_key( $product->get_sku() ) );
+			}
 		}
 	}
 
@@ -261,14 +281,16 @@ class Integration extends \WC_Integration {
 	 * @return void
 	 */
 	public function get_taxes() {
-		if ( false === ( $taxes = get_transient( 'wc_' . $this->get_plugin()->get_id() . '_taxes' ) ) ) {
+		if ( false === ( $taxes = $this->get_plugin()->get_cache( 'taxes' ) ) ) {
 			$taxes = $this->get_api()->get_taxes();
 
 			if ( ! empty( $taxes ) ) {
 				$taxes = array_column( (array) $taxes, 'Comment', 'VATCode' );
+			} else {
+				$taxes = [];
 			}
 
-			set_transient( 'wc_' . $this->get_plugin()->get_id() . '_taxes', $taxes, HOUR_IN_SECONDS );
+			$this->get_plugin()->set_cache( 'taxes', $taxes, MONTH_IN_SECONDS );
 		}
 
 		return $taxes ?? [];
@@ -661,27 +683,12 @@ class Integration extends \WC_Integration {
 	public function add_product_update_data_field() {
 		?>
 		<div class="options_group options-group__<?php echo esc_attr( $this->id ) ?>">
-			<a href="<?php echo esc_url( add_query_arg( 'update_source', $this->id ) ); ?>" class="button"><?php esc_html_e( 'Update data', 'konekt-standard-books' ); ?></a>
+			<p class="form-field">
+				<label><?php echo esc_html( $this->get_method_title() ); ?></label>
+				<a href="<?php echo esc_url( add_query_arg( 'update_source', $this->id ) ); ?>" class="button"><?php esc_html_e( 'Update data', 'konekt-standard-books' ); ?></a>
+			</p>
 		</div>
 		<?php
-	}
-
-
-	/**
-	 * WordPress initialized.
-	 *
-	 * @return void
-	 */
-	public function init() {
-		if ( isset( $_GET['update_source'] ) && $this->id === $_GET['update_source'] ) {
-			$product_id = sanitize_text_field( wp_unslash( $_GET['post'] ) );
-			$product    = wc_get_product( $product_id );
-
-			if ( $product && $product->get_sku() ) {
-				$this->get_plugin()->delete_cache( $this->get_plugin()->get_stock_cache_key( $product->get_sku() ) );
-				$this->get_plugin()->delete_cache( $this->get_plugin()->get_article_cache_key( $product->get_sku() ) );
-			}
-		}
 	}
 
 

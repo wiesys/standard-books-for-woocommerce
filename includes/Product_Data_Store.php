@@ -122,7 +122,7 @@ class Product_Data_Store {
 	 * @return Konekt\WooCommerce\Standard_Books\API
 	 */
 	protected function get_api() {
-		return $this->get_plugin()->get_integration()->get_api();
+		return $this->get_integration()->get_api();
 	}
 
 

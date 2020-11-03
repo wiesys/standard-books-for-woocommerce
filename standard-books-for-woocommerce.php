@@ -5,7 +5,7 @@
  * Description: Supercharge your WooCommerce with Standard Books integration for seamless orders data exchange.
  * Author: Konekt
  * Author URI: https://konekt.ee
- * Version: 1.0.4
+ * Version: 1.0.4.1
  * Text Domain: konekt-standard-books
  * Domain Path: /i18n/languages/
  *
@@ -44,6 +44,9 @@ class Konekt_WC_Standard_Books {
 
 	/** @var array the admin notices to add */
 	private $notices = array();
+
+	/** @var string plugin's textdomain */
+	public $textdomain = 'konekt-standard-books';
 
 
 	/**
