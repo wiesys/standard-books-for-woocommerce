@@ -103,7 +103,7 @@ class API extends Framework\SV_WC_API_Base {
 	 *
 	 * @return bool
 	 */
-	public function create_invoice( $order, $customer_code, $update_stock = true ) {
+	public function create_invoice( $order, $customer_code, $update_stock = true, $create_payment = true ) {
 
 		$order_items = [];
 		$row_number  = 0;
@@ -248,6 +248,33 @@ class API extends Framework\SV_WC_API_Base {
 								$response->IVVc->CustCode
 							)
 						);
+					}
+
+					if ( true === $create_payment && $order->is_paid() ) {
+						try {
+							$payment = [
+								'PayMode'   => $this->integration->get_option( 'payments_code', 'P' ),
+								'TransDate' => $order->get_date_paid()->format( 'Y-m-d' ),
+								'Comment'   => $order->get_payment_method_title(),
+								'rows'      => [
+									[
+										'InvoiceNr' => $response->IVVc->SerNr,
+									]
+								],
+								'OKFlag'    => 1,
+							];
+
+							$payment_request = $this->get_new_request( [
+								'method' => 'POST',
+								'path'   => 'IPVc',
+								'params' => $this->add_set_field_prefix( apply_filters( 'wc_' . $this->get_plugin()->get_id() . '_invoice_payment_data', $payment ) ),
+							] );
+
+							$payment_response = $this->perform_request( $payment_request );
+						}
+						catch ( \Exception $e ) {
+							$this->get_plugin()->log( print_r( $payment_request->get_params(), true ) );
+						}
 					}
 
 					// Save customer ID to user

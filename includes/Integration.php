@@ -196,6 +196,26 @@ class Integration extends \WC_Integration {
 				'label'   => __( 'Orders that are created with BACS payment method will not be confirmed.', 'konekt-standard-books' ),
 			],
 
+			// Payments
+			'payments_section_title' => [
+				'title' => __( 'Payments configuration', 'konekt-standard-books' ),
+				'type'  => 'title',
+			],
+
+			'payments_enabled' => [
+				'title'   => __( 'Mark payments', 'konekt-standard-books' ),
+				'type'    => 'checkbox',
+				'default' => 'no',
+				'value'   => 'yes',
+				'label'   => __( 'Payments are automatically added to the invoice.', 'konekt-standard-books' ),
+			],
+
+			'payments_code' => [
+				'title'   => __( 'Payment code', 'konekt-standard-books' ),
+				'type'    => 'text',
+				'default' => 'P',
+			],
+
 			// Stock
 			'stock_section_title' => [
 				'title' => __( 'Stock management configuration', 'konekt-standard-books' ),
@@ -300,7 +320,7 @@ class Integration extends \WC_Integration {
 	/**
 	 * Create invoice (if order status is okay)
 	 *
-	 * @param itneger $order_id
+	 * @param integer $order_id
 	 * @param string $order_old_status
 	 * @param string $order_new_status
 	 * @param \WC_Order $order
@@ -328,7 +348,7 @@ class Integration extends \WC_Integration {
 			}
 		}
 
-		$this->get_api()->create_invoice( $order, $customer_code, $update_stock );
+		$this->get_api()->create_invoice( $order, $customer_code, $update_stock, true === $this->get_option( 'payments_enabled', false ) );
 	}
 
 
