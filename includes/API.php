@@ -349,6 +349,25 @@ class API extends Framework\SV_WC_API_Base {
 		return null;
 	}
 
+	public function get_article_notes( $code ) {
+		$params = [
+			'Code'     => $code,
+		];
+
+		$response = $this->perform_request(
+			$this->get_new_request( [
+				'path'   => 'INVc',
+				'params' => $this->add_filter_prefix( apply_filters( 'wc_' . $this->get_plugin()->get_id() . '_get_article_notes', $params ) ),
+			] )
+		);
+
+		if ( 200 === $this->get_response_code() ) {
+			return $response->INVc ? $response->INVc->Math2 : '';
+		}
+
+		return '';
+	}
+
 
 	/**
 	 * Get available taxes

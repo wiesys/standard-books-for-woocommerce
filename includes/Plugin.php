@@ -73,6 +73,9 @@ class Plugin extends Framework\SV_WC_Plugin {
 
 		// Add custom data store
 		add_filter( 'woocommerce_data_stores', array( $this, 'load_product_data_store' ) );
+
+		// Add custom backorder message
+		add_filter( 'woocommerce_get_availability_text', array( $this, 'backorder_message' ), 10, 2 );
 	}
 
 
@@ -205,6 +208,10 @@ class Plugin extends Framework\SV_WC_Plugin {
 		return 'article_stock_' . $product_sku;
 	}
 
+	public function get_notes_cache_key( $product_sku ) {
+		return 'article_notes_' . $product_sku;
+	}
+
 
 	public function get_article_cache_key( $product_sku ) {
 		return 'article_' . $product_sku;
@@ -296,5 +303,24 @@ class Plugin extends Framework\SV_WC_Plugin {
 		return self::$instance;
 	}
 
+	public function backorder_message( $text, $product ) {
+    if ( $product->managing_stock() && $product->is_on_backorder( 1 ) ) {
+			$notes_cache_key = $this->get_notes_cache_key( $product->get_sku() );
+			$article_notes   = $this->get_cache( $notes_cache_key );
+
+			if ( false === $article_notes ) {
+				$article_notes = $this->get_integration()->get_api()->get_article_notes( $product->get_sku() );
+
+				$this->set_cache( $notes_cache_key, $article_notes, MINUTE_IN_SECONDS * intval( $this->get_integration()->get_option( 'stock_refresh_rate', 15 ) ) );
+			}
+
+			if ( is_string( $article_notes ) && ! empty( $article_notes) ) {
+				$text = __( $article_notes, 'woocommerce' );
+			} else {
+				$text = __( 'Piegāde no noliktavas dažu dienu laikā. Precīzākai info – jautā mājas lapas čatā!', 'woocommerce' );
+			}
+    }
+    return $text;
+	}
 
 }
