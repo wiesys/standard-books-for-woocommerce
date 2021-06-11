@@ -42,17 +42,21 @@ class Product_Data_Store {
 			$this->get_plugin()->set_cache( $stock_cache_key, $article_stock, MINUTE_IN_SECONDS * intval( $this->get_integration()->get_option( 'stock_refresh_rate', 15 ) ) );
 		}
 
-		if ( empty( $article_stock ) ) {
-			return;
-		}
-
-		$new_stock_count = wc_stock_amount( $article_stock->Instock );
-
 		$product->set_manage_stock( true );
-		$product->set_stock_quantity( $new_stock_count );
 
-		if ( $new_stock_count > 0 ) {
-			$product->set_stock_status( 'instock' );
+		if ( ! empty( $article_stock ) ) {
+			$new_stock_count = wc_stock_amount( $article_stock->Instock );
+
+			$product->set_stock_quantity( $new_stock_count );
+
+			if ( $new_stock_count > 0 ) {
+				$product->set_stock_status( 'instock' );
+				$product->set_backorders( 'yes' ); // just in case, but "in general" not necessary
+			} else {
+				$product->set_backorders( 'notify' );
+			}
+		} else {
+			$product->set_backorders( 'notify' );
 		}
 
 		if ( ! empty( $product->get_changes() ) ) {
@@ -76,7 +80,7 @@ class Product_Data_Store {
 			$article = $this->get_api()->get_article( $product->get_sku() );
 
 			if ( $article ) {
-				if ( $article->VATCode ) {
+				if ( $article->VATCode && ! is_object( $article->VATCode ) ) {
 					$available_taxes = $this->get_integration()->get_option( 'taxes', [] );
 
 					if ( array_key_exists( $article->VATCode, $available_taxes ) ) {
