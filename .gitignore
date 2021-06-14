@@ -3,3 +3,4 @@ composer.lock
 .vscode/
 *.env
 .DS_Store
+*.log
