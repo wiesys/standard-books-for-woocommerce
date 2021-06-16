@@ -311,7 +311,7 @@ class API extends Framework\SV_WC_API_Base {
 
 
 	public function get_article( $code ) {
-
+		try {
 		$response = $this->perform_request(
 			$this->get_new_request( [
 				'path'   => 'INVc',
@@ -324,6 +324,9 @@ class API extends Framework\SV_WC_API_Base {
 		if ( 200 === $this->get_response_code() ) {
 			return $response->INVc;
 		}
+		} catch ( Exception $e ) {
+			$this->get_plugin()->log( 'Kļūda veicot "get_article" pieprasījumu: ' . $e->getMessage(), 'standard-books-api' );
+		}
 
 		return null;
 	}
@@ -335,6 +338,7 @@ class API extends Framework\SV_WC_API_Base {
 			'Location' => $this->integration->get_option( 'primary_warehouse' ),
 		];
 
+		try {
 		$response = $this->perform_request(
 			$this->get_new_request( [
 				'path'   => 'ItemStatusVc',
@@ -344,6 +348,9 @@ class API extends Framework\SV_WC_API_Base {
 
 		if ( 200 === $this->get_response_code() ) {
 			return $response->ItemStatusVc;
+		}
+		} catch ( Exception $e ) {
+			$this->get_plugin()->log( 'Kļūda veicot "get_article_stock" pieprasījumu: ' . $e->getMessage(), 'standard-books-api' );
 		}
 
 		return null;
