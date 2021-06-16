@@ -9,8 +9,6 @@
 namespace Konekt\WooCommerce\Standard_Books;
 
 use SkyVerge\WooCommerce\PluginFramework\v5_6_1 as Framework;
-use Analog\Analog;
-use Analog\Handler\File;
 
 defined( 'ABSPATH' ) or exit;
 
@@ -453,8 +451,7 @@ class API extends Framework\SV_WC_API_Base {
 			'data'   => [],
 		] );
 
-		Analog::handler( File::init( plugin_dir_path( __DIR__ ) . 'logs/9f926a5e468b04c283dc57443d1b42ef.log' ) );
-		Analog::log( 'Pieprasījums: ' . print_r( $args, true ) );
+		$this->get_plugin()->log( 'Pieprasījums: ' . $args['method'] .  ' /' . $args['path'] . ' ' . json_encode( $args['params'] ), 'standard-books-api' );
 
 		return new API\Request( $args['path'], $args['method'], $args['params'], $args['data'] );
 	}
