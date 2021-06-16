@@ -305,14 +305,14 @@ class Plugin extends Framework\SV_WC_Plugin {
 
 	public function backorder_message( $text, $product ) {
     if ( $product->managing_stock() && $product->is_on_backorder( 1 ) ) {
-			$notes_cache_key = $this->get_notes_cache_key( $product->get_sku() );
-			$article_notes   = $this->get_cache( $notes_cache_key );
+			$article_cache_key = $this->get_article_cache_key( $product->get_sku() );
+			$article = $this->get_cache( $article_cache_key );
 
-			if ( false === $article_notes ) {
-				$article_notes = $this->get_integration()->get_api()->get_article_notes( $product->get_sku() );
-
-				$this->set_cache( $notes_cache_key, $article_notes, MINUTE_IN_SECONDS * intval( $this->get_integration()->get_option( 'stock_refresh_rate', 15 ) ) );
+			if ( false === $article ) {
+				$article = $this->get_integration()->get_api()->get_article( $product->get_sku() );
+				$this->set_cache( $article_cache_key, $article, DAY_IN_SECONDS * intval( $this->get_integration()->get_option( 'product_refresh_rate', 30 ) ) );
 			}
+			$article_notes = $article ? $article->Math2 : '';
 
 			if ( is_string( $article_notes ) && ! empty( $article_notes) ) {
 				$text = __( $article_notes, 'woocommerce' );
