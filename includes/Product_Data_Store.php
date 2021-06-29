@@ -33,11 +33,25 @@ class Product_Data_Store {
 	 * @return void
 	 */
 	private function refetch_product_stock( &$product ) {
-		$stock_cache_key = $this->get_plugin()->get_stock_cache_key( $product->get_sku() );
+		$sku = $product->get_sku();
+		$stock_cache_key = $this->get_plugin()->get_stock_cache_key( $sku );
 		$article_stock   = $this->get_plugin()->get_cache( $stock_cache_key );
 
 		if ( false === $article_stock ) {
-			$article_stock = $this->get_api()->get_article_stock( $product->get_sku() );
+			$all_stock_cache_key = $this->get_plugin()->get_all_stock_cache_key();
+			$all_stock   = $this->get_plugin()->get_cache( $all_stock_cache_key );
+
+			if ( false === $all_stock ) {
+				$all_stock = $this->get_api()->get_all_stock();
+				$this->get_plugin()->set_cache( $all_stock_cache_key, $all_stock, MINUTE_IN_SECONDS * intval( $this->get_integration()->get_option( 'stock_refresh_rate', 15 ) ) );
+			}
+			
+			foreach ( $all_stock as $item ) {
+				if ( $item->Code === $sku ) {
+					$article_stock = $item;
+					break;
+				}
+			}
 
 			$this->get_plugin()->set_cache( $stock_cache_key, $article_stock, MINUTE_IN_SECONDS * intval( $this->get_integration()->get_option( 'stock_refresh_rate', 15 ) ) );
 		}
@@ -73,11 +87,26 @@ class Product_Data_Store {
 	 * @return void
 	 */
 	private function refetch_product_data( &$product ) {
+		$sku = $product->get_sku();
+		$article_cache_key = $this->get_plugin()->get_article_cache_key( $sku );
 
-		$article_cache_key = $this->get_plugin()->get_article_cache_key( $product->get_sku() );
+		if ( false === ( $article = $this->get_plugin()->get_cache( $article_cache_key ) ) ) {
+			$all_article_cache_key = $this->get_plugin()->get_all_article_cache_key();
+			$all_article   = $this->get_plugin()->get_cache( $all_article_cache_key );
 
-		if ( false === ( $cached = $this->get_plugin()->get_cache( $article_cache_key ) ) ) {
-			$article = $this->get_api()->get_article( $product->get_sku() );
+			if ( false === $all_article ) {
+				$all_article = $this->get_api()->get_all_articles();
+				$this->get_plugin()->set_cache( $all_article_cache_key, $all_article, MINUTE_IN_SECONDS * intval( $this->get_integration()->get_option( 'stock_refresh_rate', 15 ) ) );
+			}
+			
+			foreach ( $all_article as $item ) {
+				if ( $item->Code === $sku ) {
+					$article = $item;
+					break;
+				}
+			}
+
+			$this->get_plugin()->set_cache( $article_cache_key, $article, MINUTE_IN_SECONDS * intval( $this->get_integration()->get_option( 'stock_refresh_rate', 15 ) ) );
 
 			if ( $article ) {
 				if ( $article->VATCode && ! is_object( $article->VATCode ) ) {
@@ -104,8 +133,6 @@ class Product_Data_Store {
 					}
 				}
 			}
-
-			$this->get_plugin()->set_cache( $article_cache_key, $article, DAY_IN_SECONDS * intval( $this->get_integration()->get_option( 'product_refresh_rate', 30 ) ) );
 		}
 	}
 

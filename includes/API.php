@@ -312,18 +312,20 @@ class API extends Framework\SV_WC_API_Base {
 
 	public function get_article( $code ) {
 		try {
-		$response = $this->perform_request(
-			$this->get_new_request( [
-				'path'   => 'INVc',
-				'params' => $this->add_filter_prefix( apply_filters( 'wc_' . $this->get_plugin()->get_id() . '_get_article', [
-					'Code' => $code
-				] ) ),
-			] )
-		);
-
-		if ( 200 === $this->get_response_code() ) {
-			return $response->INVc;
-		}
+			$response = $this->perform_request(
+				$this->get_new_request( [
+					'path'   => 'INVc',
+					'params' => $this->add_filter_prefix( apply_filters( 'wc_' . $this->get_plugin()->get_id() . '_get_article', [
+						'Code' => $code
+					] ) ),
+				] )
+			);
+	
+			if ( 200 === $this->get_response_code() ) {
+				return $response->INVc;
+			} else {
+				$this->get_plugin()->log( 'Kļūda veicot "get_article" pieprasījumu: ' . print_r( $response, true ), 'standard-books-api-errors' );
+			}
 		} catch ( Exception $e ) {
 			$this->get_plugin()->log( 'Kļūda veicot "get_article" pieprasījumu: ' . $e->getMessage(), 'standard-books-api' );
 		}
@@ -339,16 +341,18 @@ class API extends Framework\SV_WC_API_Base {
 		];
 
 		try {
-		$response = $this->perform_request(
-			$this->get_new_request( [
-				'path'   => 'ItemStatusVc',
-				'params' => $this->add_filter_prefix( apply_filters( 'wc_' . $this->get_plugin()->get_id() . '_get_article_stock', $params ) ),
-			] )
-		);
+			$response = $this->perform_request(
+				$this->get_new_request( [
+					'path'   => 'ItemStatusVc',
+					'params' => $this->add_filter_prefix( apply_filters( 'wc_' . $this->get_plugin()->get_id() . '_get_article_stock', $params ) ),
+				] )
+			);
 
-		if ( 200 === $this->get_response_code() ) {
-			return $response->ItemStatusVc;
-		}
+			if ( 200 === $this->get_response_code() ) {
+				return $response->ItemStatusVc;
+			} else {
+				$this->get_plugin()->log( 'Kļūda veicot "get_article_stock" pieprasījumu: ' . print_r( $response, true ), 'standard-books-api-errors' );
+			}
 		} catch ( Exception $e ) {
 			$this->get_plugin()->log( 'Kļūda veicot "get_article_stock" pieprasījumu: ' . $e->getMessage(), 'standard-books-api' );
 		}
@@ -356,23 +360,56 @@ class API extends Framework\SV_WC_API_Base {
 		return null;
 	}
 
-	public function get_article_notes( $code ) {
-		$params = [
-			'Code'     => $code,
+	public function get_all_stock() {
+		$filter = [
+			'Location' => $this->integration->get_option( 'primary_warehouse' ),
 		];
+		$fields = 'Code,Instock';
 
-		$response = $this->perform_request(
-			$this->get_new_request( [
-				'path'   => 'INVc',
-				'params' => $this->add_filter_prefix( apply_filters( 'wc_' . $this->get_plugin()->get_id() . '_get_article_notes', $params ) ),
-			] )
-		);
+		$params = $this->add_filter_prefix( apply_filters( 'wc_' . $this->get_plugin()->get_id() . '_get_all_stock', $filter ) );
+		$params['fields'] = $fields;
 
-		if ( 200 === $this->get_response_code() ) {
-			return $response->INVc ? $response->INVc->Math2 : '';
+		try {
+			$response = $this->perform_request(
+				$this->get_new_request( [
+					'path'   => 'ItemStatusVc',
+					'params' => $params,
+				] )
+			);
+
+			if ( 200 === $this->get_response_code() ) {
+				return $response->ItemStatusVc;
+			} else {
+				$this->get_plugin()->log( 'Kļūda veicot "get_all_stock" pieprasījumu: ' . print_r( $response, true ), 'standard-books-api-errors' );
+			}
+		} catch ( Exception $e ) {
+			$this->get_plugin()->log( 'Kļūda veicot "get_all_stock" pieprasījumu: ' . $e->getMessage(), 'standard-books-api' );
 		}
 
-		return '';
+		return null;
+	}
+
+	public function get_all_articles() {
+		try {
+			$response = $this->perform_request(
+				$this->get_new_request( [
+					'path'   => 'INVc',
+					'params' => [
+						'fields' => 'Code,Math2,VATCode',
+					],
+				] )
+			);
+
+			if ( 200 === $this->get_response_code() ) {
+				return $response->INVc;
+			} else {
+				$this->get_plugin()->log( 'Kļūda veicot "get_all_articles" pieprasījumu: ' . print_r( $response, true ), 'standard-books-api-errors' );
+			}
+		} catch ( Exception $e ) {
+			$this->get_plugin()->log( 'Kļūda veicot "get_all_articles" pieprasījumu: ' . $e->getMessage(), 'standard-books-api' );
+		}
+
+		return null;
 	}
 
 

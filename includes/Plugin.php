@@ -208,13 +208,19 @@ class Plugin extends Framework\SV_WC_Plugin {
 		return 'article_stock_' . $product_sku;
 	}
 
-	public function get_notes_cache_key( $product_sku ) {
-		return 'article_notes_' . $product_sku;
+
+	public function get_all_stock_cache_key() {
+		return 'all_stock';
 	}
 
 
 	public function get_article_cache_key( $product_sku ) {
 		return 'article_' . $product_sku;
+	}
+
+
+	public function get_all_article_cache_key() {
+		return 'all_article';
 	}
 
 
@@ -305,15 +311,30 @@ class Plugin extends Framework\SV_WC_Plugin {
 
 	public function backorder_message( $text, $product ) {
     if ( $product->managing_stock() && $product->is_on_backorder( 1 ) ) {
-			$article_cache_key = $this->get_article_cache_key( $product->get_sku() );
+			$sku = $product->get_sku();
+			$article_cache_key = $this->get_article_cache_key( $sku );
 			$article = $this->get_cache( $article_cache_key );
 
 			if ( false === $article ) {
-				$article = $this->get_integration()->get_api()->get_article( $product->get_sku() );
+				$all_article_cache_key = $this->get_all_article_cache_key();
+				$all_article   = $this->get_cache( $all_article_cache_key );
+
+				if ( false === $all_article ) {
+					$all_article = $this->get_integration()->get_api()->get_all_articles();
+					$this->set_cache( $all_article_cache_key, $all_article, MINUTE_IN_SECONDS * intval( $this->get_integration()->get_option( 'stock_refresh_rate', 15 ) ) );
+				}
+
+				foreach ( $all_article as $item ) {
+					if ( $item->Code === $sku ) {
+						$article = $item;
+						break;
+					}
+				}
+
 				$this->set_cache( $article_cache_key, $article, DAY_IN_SECONDS * intval( $this->get_integration()->get_option( 'product_refresh_rate', 30 ) ) );
 			}
 			$article_notes = $article ? $article->Math2 : '';
-
+			
 			if ( is_string( $article_notes ) && ! empty( $article_notes) ) {
 				$text = __( $article_notes, 'woocommerce' );
 			} else {
