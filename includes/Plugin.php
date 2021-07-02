@@ -224,6 +224,11 @@ class Plugin extends Framework\SV_WC_Plugin {
 	}
 
 
+	public function get_all_product_orders_cache_key() {
+		return 'all_product_orders';
+	}
+
+
 	public function get_cache( $cache_key ) {
 		return get_transient( $this->cache_prefix . $cache_key );
 	}
@@ -338,7 +343,32 @@ class Plugin extends Framework\SV_WC_Plugin {
 			if ( is_string( $article_notes ) && ! empty( $article_notes) ) {
 				$text = __( $article_notes, 'woocommerce' );
 			} else {
-				$text = __( 'Piegāde no noliktavas dažu dienu laikā. Precīzākai info – jautā mājas lapas čatā!', 'woocommerce' );
+				$all_product_orders_cache_key = $this->get_all_product_orders_cache_key();
+				$all_orders = $this->get_cache( $all_product_orders_cache_key );
+
+				if ( false === $all_orders ) {
+					$all_orders = $this->get_integration()->get_api()->get_all_product_orders();
+					$this->set_cache( $all_product_orders_cache_key, $all_orders, MINUTE_IN_SECONDS * intval( $this->get_integration()->get_option( 'stock_refresh_rate', 15 ) ) );
+				}
+
+				$found = false;
+				if ( $all_orders ) {
+					$all_orders_array = is_array( $all_orders ) ? $all_orders : array( $all_orders );
+					foreach ( $all_orders_array as $item ) {
+						$rows = is_array( $item->rows->row ) ? $item->rows->row : array( $item->rows->row );
+						foreach ( $rows as $row ) {
+							if ( ! ( ( string ) $row->ArtCode !== $sku || empty( ( array ) $item->PlanShip ) ) ) {
+								$found = true;
+								$text = sprintf( 'Piegāde uz veikalu plānota %s.', $item->PlanShip );
+								break 2;
+							}
+						}
+					}
+				}
+	
+				if ( ! $found ) {
+					$text = __( 'Piegāde no noliktavas dažu dienu laikā. Precīzākai info – jautā mājas lapas čatā!', 'woocommerce' );
+				}
 			}
     }
     return $text;

@@ -412,6 +412,29 @@ class API extends Framework\SV_WC_API_Base {
 		return null;
 	}
 
+	public function get_all_product_orders() {
+		try {
+			$response = $this->perform_request(
+				$this->get_new_request( [
+					'path'   => 'POVc',
+					'params' => [
+						'sort' => 'PUFlag',
+						'range' => '0',
+					],
+				] )
+			);
+
+			if ( 200 === $this->get_response_code() ) {
+				return $response->POVc;
+			} else {
+				$this->get_plugin()->log( 'Kļūda veicot "get_all_product_orders" pieprasījumu: ' . print_r( $response, true ), 'standard-books-api-errors' );
+			}
+		} catch ( Exception $e ) {
+			$this->get_plugin()->log( 'Kļūda veicot "get_all_product_orders" pieprasījumu: ' . $e->getMessage(), 'standard-books-api' );
+		}
+
+		return null;
+	}
 
 	/**
 	 * Get available taxes
